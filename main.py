@@ -70,10 +70,7 @@ def plot_statistics(data1):
     data1.drop(columns=['Unidades da Federação']).mean().plot(kind='bar', color='skyblue', title="Média das Variáveis Socioeconômicas")
     st.pyplot()
 
-    # Gráfico de Pizza
-    st.write("Gráfico de Pizza das Proporções de Pessoas com Vulnerabilidade")
-    data2['Proporção de pessoas com algum grau de vulnerabilidade (%)'].plot(kind='pie', autopct='%1.1f%%', startangle=90, title="Proporção de Pessoas com Vulnerabilidade")
-    st.pyplot()
+
 
 # Análise de Correlação
 def plot_correlation(data1):
