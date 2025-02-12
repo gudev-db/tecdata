@@ -13,6 +13,9 @@ from sklearn.decomposition import PCA
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import RandomForestRegressor
 
+st.set_page_config(layout="wide")
+
+
 # Carregar os dados
 @st.cache
 def load_data():
@@ -127,7 +130,6 @@ def run_prediction(data1):
 
 # Interface Streamlit
 def main():
-    st.set_page_config(layout="wide")
     st.title("Análise de Dados Socioeconômicos e Qualidade de Vida")
     
     # Carregar os dados
