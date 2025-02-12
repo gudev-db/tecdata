@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import folium
-from streamlit_folium import folium_static
 from folium.plugins import MarkerCluster
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
@@ -16,112 +15,136 @@ from sklearn.ensemble import RandomForestRegressor
 
 st.set_page_config(layout="wide")
 
-# Coordenadas aproximadas dos estados do Brasil
-coordenadas_estados = {
-    'Brasil': [-14.235, -51.9253],
-    'Rondônia': [-10.83, -63.34],
-    'Acre': [-9.02, -70.81],
-    'Amazonas': [-3.07, -61.66],
-    'Roraima': [2.05, -61.40],
-    'Pará': [-3.79, -52.48],
-    'Amapá': [1.41, -51.77],
-    'Tocantins': [-10.25, -48.25],
-    'Maranhão': [-5.42, -45.44],
-    'Piauí': [-7.07, -42.80],
-    'Ceará': [-5.20, -39.53],
-    'Rio Grande do Norte': [-5.81, -36.59],
-    'Paraíba': [-7.12, -36.72],
-    'Pernambuco': [-8.38, -37.86],
-    'Alagoas': [-9.57, -36.78],
-    'Sergipe': [-10.57, -37.45],
-    'Bahia': [-12.97, -41.39],
-    'Minas Gerais': [-18.10, -44.38],
-    'Espírito Santo': [-19.19, -40.34],
-    'Rio de Janeiro': [-22.91, -43.20],
-    'São Paulo': [-23.55, -46.64],
-    'Paraná': [-25.25, -52.02],
-    'Santa Catarina': [-27.33, -50.45],
-    'Rio Grande do Sul': [-30.03, -51.22],
-    'Mato Grosso do Sul': [-20.51, -54.54],
-    'Mato Grosso': [-12.64, -55.42],
-    'Goiás': [-15.82, -49.22],
-    'Distrito Federal': [-15.78, -47.93]
-}
 
+# Carregar os dados
 @st.cache
 def load_data():
-    """Carregar os dados fictícios."""
+    # Simular a leitura de dados CSVs
     data1 = pd.DataFrame({
-        'Unidades da Federação': list(coordenadas_estados.keys()),
-        'IPQV': np.random.uniform(0.1, 0.3, len(coordenadas_estados)),  # Simulação de IPQV
+        'Unidades da Federação': ['Brasil', 'Rondônia', 'Acre', 'Amazonas', 'Roraima', 'Pará', 'Amapá', 'Tocantins', 'Maranhão', 'Piauí', 
+                                  'Ceará', 'Rio Grande do Norte', 'Paraíba', 'Pernambuco', 'Alagoas', 'Sergipe', 'Bahia', 'Minas Gerais', 'Espírito Santo', 
+                                  'Rio de Janeiro', 'São Paulo', 'Paraná', 'Santa Catarina', 'Rio Grande do Sul', 'Mato Grosso do Sul', 'Mato Grosso', 
+                                  'Goiás', 'Distrito Federal'],
+        'IPQV': [0.157, 0.193, 0.237, 0.215, 0.169, 0.242, 0.222, 0.186, 0.259, 0.211, 0.187, 0.203, 0.206, 0.205, 0.216, 0.185, 0.198, 0.137, 
+                 0.138, 0.148, 0.112, 0.112, 0.099, 0.126, 0.152, 0.166, 0.165, 0.138],
+        'B': [7.277, 6.994, 6.895, 6.793, 7.046, 6.687, 6.965, 6.794, 6.534, 6.856, 6.833, 7.006, 6.875, 6.963, 6.641, 7.130, 7.012, 7.296, 
+              7.337, 7.437, 7.669, 7.440, 7.524, 7.573, 7.373, 7.324, 7.351, 8.028],
+        'K': [1.130, 1.349, 1.636, 1.460, 1.194, 1.620, 1.548, 1.267, 1.693, 1.450, 1.279, 1.423, 1.420, 1.424, 1.437, 1.320, 1.390, 0.997, 
+              1.014, 1.101, 0.857, 0.833, 0.743, 0.956, 1.120, 1.216, 1.212, 1.104],
+        'B*IPQV': [6.147, 5.645, 5.259, 5.334, 5.852, 5.067, 5.416, 5.527, 4.841, 5.406, 5.554, 5.583, 5.455, 5.539, 5.204, 5.810, 5.622, 
+                   6.299, 6.324, 6.336, 6.811, 6.607, 6.781, 6.617, 6.253, 6.108, 6.139, 6.923]
     })
-    return data1
+    
+    data2 = pd.DataFrame({
+        'Unidades da Federação': ['Brasil', 'Rondônia', 'Acre', 'Amazonas', 'Roraima', 'Pará', 'Amapá', 'Tocantins', 'Maranhão', 'Piauí', 
+                                  'Ceará', 'Rio Grande do Norte', 'Paraíba', 'Pernambuco', 'Alagoas', 'Sergipe', 'Bahia', 'Minas Gerais', 'Espírito Santo', 
+                                  'Rio de Janeiro', 'São Paulo', 'Paraná', 'Santa Catarina', 'Rio Grande do Sul', 'Mato Grosso do Sul', 'Mato Grosso', 
+                                  'Goiás', 'Distrito Federal'],
+        'Proporção de pessoas das famílias residentes (%)': [100.0, 0.8, 0.4, 1.9, 0.2, 4.1, 0.4, 0.7, 3.4, 1.6, 4.4, 1.7, 1.9, 4.5, 1.6, 1.1, 
+                                                              7.1, 10.1, 1.9, 8.3, 21.9, 5.5, 3.4, 5.5, 1.3, 1.6, 3.3, 1.4],
+        'Proporção de pessoas com algum grau de vulnerabilidade (%)': [63.8, 84.8, 89.0, 83.6, 72.3, 89.1, 88.5, 80.7, 93.3, 85.2, 78.9, 81.9, 
+                                                                     81.2, 81.4, 85.3, 76.4, 79.9, 58.1, 58.8, 59.9, 45.7, 45.7, 40.0, 
+                                                                     53.6, 69.0, 74.7, 69.2, 57.8],
+        'Moradia': [7.7, 10.2, 15.1, 12.8, 8.4, 15.7, 13.5, 9.7, 17.4, 12.4, 10.1, 11.7, 12.1, 11.9, 13.1, 10.0, 11.3, 5.6, 5.9, 6.8, 3.9, 
+                    3.8, 2.6, 4.7, 6.7, 7.9, 8.1, 5.7],
+        'Acesso aos serviços de utilidade pública': [15.0, 13.5, 15.2, 16.5, 17.8, 15.0, 16.1, 15.3, 15.1, 14.2, 15.3, 14.6, 14.6, 15.1, 15.1, 
+                                                    14.7, 13.5, 13.9, 15.7, 16.8, 16.5, 14.6, 13.6, 15.3, 14.9, 14.2, 14.1, 14.4]
+    })
+    
+    return data1, data2
 
-def plot_map(data1):
-    """Gerar um mapa interativo com Folium."""
-    st.write("### Mapa Interativo - Índice de Qualidade de Vida por Estado")
+# Exibir os dataframes no Streamlit
+def show_dataframes(data1, data2):
+    st.write("Data1 - Dados Socioeconômicos")
+    st.dataframe(data1)
+    st.write("Data2 - Índices de Qualidade de Vida")
+    st.dataframe(data2)
 
-    # Criar o mapa centralizado no Brasil
-    mapa = folium.Map(location=[-14.235, -51.9253], zoom_start=4)
+# Estatísticas e Gráficos
+def plot_statistics(data1):
+    st.write("Estatísticas Descritivas do Conjunto de Dados:")
+    st.dataframe(data1.describe())
+    
+    # Gráfico de Barra
+    st.write("Gráfico de Barra das variáveis socioeconômicas")
+    data1.drop(columns=['Unidades da Federação']).mean().plot(kind='bar', color='skyblue', title="Média das Variáveis Socioeconômicas")
+    st.pyplot()
 
-    # Criar um cluster de marcadores
-    marker_cluster = MarkerCluster().add_to(mapa)
 
-    # Adicionar marcadores para cada estado
-    for _, row in data1.iterrows():
-        estado = row['Unidades da Federação']
-        ipqv = row['IPQV']
-        
-        if estado in coordenadas_estados:
-            lat, lon = coordenadas_estados[estado]
-            popup_text = f"<b>{estado}</b><br>IPQV: {ipqv:.3f}"
-            folium.Marker(
-                location=[lat, lon],
-                popup=popup_text,
-                icon=folium.Icon(color="blue", icon="info-sign")
-            ).add_to(marker_cluster)
 
-    # Exibir o mapa no Streamlit
-    folium_static(mapa)
+# Análise de Correlação
+def plot_correlation(data1):
+    st.write("Correlação entre as variáveis:")
+    corr = data1.drop(columns=['Unidades da Federação']).corr()
+    fig, ax = plt.subplots(figsize=(10, 6))
+    sns.heatmap(corr, annot=True, cmap='coolwarm', ax=ax)
+    st.pyplot()
 
+# Algoritmo de previsão
+def run_prediction(data1):
+    target_column = "IPQV"  # Alvo a ser previsto
+    
+    if target_column not in data1.columns:
+        st.error(f"A coluna {target_column} não foi encontrada em 'data1'.")
+        return
+
+    # Selecionar as variáveis independentes (remover a coluna alvo)
+    X = data1.drop(columns=[target_column, 'Unidades da Federação'])
+    y = data1[target_column]
+    
+    # Normalizar os dados
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(X)
+    
+    # Dividir os dados em treino e teste
+    X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, random_state=42)
+    
+    # Modelos de Regressão
+    models = {
+        "Regressão Linear": LinearRegression(),
+        "Árvore de Decisão": DecisionTreeRegressor(),
+        "Random Forest": RandomForestRegressor()
+    }
+    
+    mse_scores = {}
+    
+    # Treinar e avaliar os modelos
+    for name, model in models.items():
+        model.fit(X_train, y_train)
+        y_pred = model.predict(X_test)
+        mse = mean_squared_error(y_test, y_pred)
+        mse_scores[name] = mse
+
+    # Gráfico de comparação de MSE
+    st.write("Comparação de MSE entre os Modelos")
+    fig, ax = plt.subplots()
+    ax.bar(mse_scores.keys(), mse_scores.values(), color='skyblue')
+    ax.set_title('MSE dos Modelos')
+    ax.set_ylabel('MSE')
+    st.pyplot()
+    
+    return mse_scores
+
+# Interface Streamlit
 def main():
     st.title("Análise de Dados Socioeconômicos e Qualidade de Vida")
     
     # Carregar os dados
-    data1 = load_data()
+    data1, data2 = load_data()
     
-    # Mostrar o DataFrame
-    st.write("## Dados Carregados")
-    st.dataframe(data1)
+    # Mostrar os dataframes
+    show_dataframes(data1, data2)
     
-    # Exibir o mapa interativo
-    plot_map(data1)
+    # Estatísticas e gráficos
+    plot_statistics(data1)
     
-    # Gráficos
-    st.write("## Distribuição do IPQV")
-    fig, ax = plt.subplots()
-    sns.histplot(data1['IPQV'], bins=10, kde=True, ax=ax)
-    st.pyplot(fig)
-
-    # Regressão linear
-    X = np.array(data1.index).reshape(-1, 1)
-    y = data1['IPQV']
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
-    model = LinearRegression()
-    model.fit(X_train, y_train)
-    y_pred = model.predict(X_test)
+    # Análise de correlação
+    plot_correlation(data1)
     
-    st.write("## Regressão Linear - Predição do IPQV")
-    fig, ax = plt.subplots()
-    ax.scatter(y_test, y_pred)
-    ax.set_xlabel("Valores Reais")
-    ax.set_ylabel("Predições")
-    ax.set_title("Regressão Linear: Predição vs Real")
-    st.pyplot(fig)
+    # Rodar previsão
+    mse_scores = run_prediction(data1)
+    st.write("MSE dos Modelos de Previsão:", mse_scores)
 
-    mse = mean_squared_error(y_test, y_pred)
-    st.write(f"Erro Quadrático Médio (MSE): {mse:.5f}")
-
+# Executar a aplicação Streamlit
 if __name__ == "__main__":
     main()
