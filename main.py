@@ -6,12 +6,17 @@ from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error
 import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.ensemble import RandomForestRegressor
 
 # Carregar os dados
 @st.cache
 def load_data():
     # Simular a leitura de dados CSVs
-    # Criando DataFrame a partir dos dados fornecidos
     data1 = pd.DataFrame({
         'Unidades da Federação': ['Brasil', 'Rondônia', 'Acre', 'Amazonas', 'Roraima', 'Pará', 'Amapá', 'Tocantins', 'Maranhão', 'Piauí', 
                                   'Ceará', 'Rio Grande do Norte', 'Paraíba', 'Pernambuco', 'Alagoas', 'Sergipe', 'Bahia', 'Minas Gerais', 'Espírito Santo', 
@@ -52,6 +57,29 @@ def show_dataframes(data1, data2):
     st.write("Data2 - Índices de Qualidade de Vida")
     st.dataframe(data2)
 
+# Estatísticas e Gráficos
+def plot_statistics(data1):
+    st.write("Estatísticas Descritivas do Conjunto de Dados:")
+    st.dataframe(data1.describe())
+    
+    # Gráfico de Barra
+    st.write("Gráfico de Barra das variáveis socioeconômicas")
+    data1.drop(columns=['Unidades da Federação']).mean().plot(kind='bar', color='skyblue', title="Média das Variáveis Socioeconômicas")
+    st.pyplot()
+
+    # Gráfico de Pizza
+    st.write("Gráfico de Pizza das Proporções de Pessoas com Vulnerabilidade")
+    data2['Proporção de pessoas com algum grau de vulnerabilidade (%)'].plot(kind='pie', autopct='%1.1f%%', startangle=90, title="Proporção de Pessoas com Vulnerabilidade")
+    st.pyplot()
+
+# Análise de Correlação
+def plot_correlation(data1):
+    st.write("Correlação entre as variáveis:")
+    corr = data1.drop(columns=['Unidades da Federação']).corr()
+    fig, ax = plt.subplots(figsize=(10, 6))
+    sns.heatmap(corr, annot=True, cmap='coolwarm', ax=ax)
+    st.pyplot()
+
 # Algoritmo de previsão
 def run_prediction(data1):
     target_column = "IPQV"  # Alvo a ser previsto
@@ -62,36 +90,44 @@ def run_prediction(data1):
 
     # Selecionar as variáveis independentes (remover a coluna alvo)
     X = data1.drop(columns=[target_column, 'Unidades da Federação'])
-    
-    # Garantir que a coluna alvo seja numérica
     y = data1[target_column]
     
+    # Normalizar os dados
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(X)
+    
     # Dividir os dados em treino e teste
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, random_state=42)
     
-    # Modelo de regressão linear
-    model = LinearRegression()
-    model.fit(X_train, y_train)
+    # Modelos de Regressão
+    models = {
+        "Regressão Linear": LinearRegression(),
+        "Árvore de Decisão": DecisionTreeRegressor(),
+        "Random Forest": RandomForestRegressor()
+    }
     
-    # Prever no conjunto de teste
-    y_pred = model.predict(X_test)
+    mse_scores = {}
     
-    # Avaliar o modelo
-    mse = mean_squared_error(y_test, y_pred)
-    st.write(f"Erro médio quadrático (MSE): {mse}")
-    
-    return model, X_test, y_test, y_pred
+    # Treinar e avaliar os modelos
+    for name, model in models.items():
+        model.fit(X_train, y_train)
+        y_pred = model.predict(X_test)
+        mse = mean_squared_error(y_test, y_pred)
+        mse_scores[name] = mse
 
-import streamlit as st
-import pandas as pd
-import folium
-from folium.plugins import MarkerCluster
-from streamlit.components.v1 import html  # Importação necessária para renderizar o mapa
-
-
+    # Gráfico de comparação de MSE
+    st.write("Comparação de MSE entre os Modelos")
+    fig, ax = plt.subplots()
+    ax.bar(mse_scores.keys(), mse_scores.values(), color='skyblue')
+    ax.set_title('MSE dos Modelos')
+    ax.set_ylabel('MSE')
+    st.pyplot()
+    
+    return mse_scores
 
 # Interface Streamlit
 def main():
+    st.set_page_config(layout="wide")
     st.title("Análise de Dados Socioeconômicos e Qualidade de Vida")
     
     # Carregar os dados
@@ -100,21 +136,15 @@ def main():
     # Mostrar os dataframes
     show_dataframes(data1, data2)
     
-    # Estatísticas descritivas
-    st.write("Estatísticas Descritivas do Conjunto de Dados:")
-    st.dataframe(data1.describe())
+    # Estatísticas e gráficos
+    plot_statistics(data1)
+    
+    # Análise de correlação
+    plot_correlation(data1)
     
     # Rodar previsão
-    st.write("Rodando o Modelo de Previsão:")
-    model, X_test, y_test, y_pred = run_prediction(data1)
-    
-    # Mostrar predições
-    st.write("Predições do Modelo:")
-    st.dataframe(pd.DataFrame({'Real': y_test, 'Predito': y_pred}))
-    
-    # Mostrar o mapa
-    st.write("Visualização Geográfica:")
-
+    mse_scores = run_prediction(data1)
+    st.write("MSE dos Modelos de Previsão:", mse_scores)
 
 # Executar a aplicação Streamlit
 if __name__ == "__main__":
