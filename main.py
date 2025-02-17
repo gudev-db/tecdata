@@ -12,6 +12,8 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import RandomForestRegressor
+from streamlit_folium import folium_static  # Import this
+
 
 st.set_page_config(layout="wide")
 
