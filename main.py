@@ -9,11 +9,13 @@ import numpy as np
 from sklearn.preprocessing import StandardScaler
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import RandomForestRegressor
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 st.set_page_config(layout="wide")
 
 # Carregar os dados
-@st.cache
+@st.cache_data
 def load_data():
     # Simular a leitura de dados CSVs
     data1 = pd.DataFrame({
@@ -66,6 +68,29 @@ def plot_statistics(merged_data):
     st.write("Média das Variáveis Socioeconômicas")
     media_variaveis = merged_data.drop(columns=['Unidades da Federação']).mean()
     st.bar_chart(media_variaveis)
+    
+    # Gráfico de Variância por Estado
+    st.write("Variância das Variáveis Socioeconômicas por Estado")
+    variancia_variaveis = merged_data.drop(columns=['Unidades da Federação']).var()
+    st.bar_chart(variancia_variaveis)
+    
+    # Análise visual por estado: Gráfico de Boxplot
+    st.write("Distribuição das Variáveis Socioeconômicas por Estado (Boxplot)")
+    fig, ax = plt.subplots(figsize=(10, 6))
+    sns.boxplot(x='Unidades da Federação', y='B', data=merged_data, ax=ax)
+    plt.xticks(rotation=90)
+    st.pyplot(fig)
+    
+    fig, ax = plt.subplots(figsize=(10, 6))
+    sns.boxplot(x='Unidades da Federação', y='K', data=merged_data, ax=ax)
+    plt.xticks(rotation=90)
+    st.pyplot(fig)
+
+    # Gráfico de dispersão (exemplo de relação entre IPQV e B)
+    st.write("Gráfico de Dispersão entre IPQV e B")
+    fig, ax = plt.subplots(figsize=(10, 6))
+    sns.scatterplot(data=merged_data, x='B', y='IPQV', ax=ax)
+    st.pyplot(fig)
 
 # Algoritmo de previsão
 def run_prediction(merged_data):
