@@ -6,15 +6,11 @@ from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error
 import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
 from sklearn.preprocessing import StandardScaler
-from sklearn.decomposition import PCA
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import RandomForestRegressor
 
 st.set_page_config(layout="wide")
-
 
 # Carregar os dados
 @st.cache
@@ -51,46 +47,47 @@ def load_data():
                                                     14.7, 13.5, 13.9, 15.7, 16.8, 16.5, 14.6, 13.6, 15.3, 14.9, 14.2, 14.1, 14.4]
     })
     
-    return data1, data2
+    # Merge dos dados com base na coluna 'Unidades da Federação'
+    merged_data = pd.merge(data1, data2, on='Unidades da Federação', how='inner')
+    
+    return merged_data
 
-# Exibir os dataframes no Streamlit
-def show_dataframes(data1, data2):
-    st.write("Data1 - Dados Socioeconômicos")
-    st.dataframe(data1)
-    st.write("Data2 - Índices de Qualidade de Vida")
-    st.dataframe(data2)
+# Exibir o DataFrame merge
+def show_data(merged_data):
+    st.write("Dados Combinados (merge entre data1 e data2)")
+    st.dataframe(merged_data)
 
 # Estatísticas e Gráficos
-def plot_statistics(data1):
-    st.write("Estatísticas Descritivas do Conjunto de Dados:")
-    st.dataframe(data1.describe())
+def plot_statistics(merged_data):
+    st.write("Estatísticas Descritivas do Conjunto de Dados Combinados:")
+    st.dataframe(merged_data.describe())
     
-    # Gráfico de Barra
+    # Gráfico de Barra usando Streamlit
     st.write("Gráfico de Barra das variáveis socioeconômicas")
-    data1.drop(columns=['Unidades da Federação']).mean().plot(kind='bar', color='skyblue', title="Média das Variáveis Socioeconômicas")
+    merged_data.drop(columns=['Unidades da Federação']).mean().plot(kind='bar', color='skyblue', title="Média das Variáveis Socioeconômicas")
     st.pyplot()
-
-
 
 # Análise de Correlação
-def plot_correlation(data1):
+def plot_correlation(merged_data):
     st.write("Correlação entre as variáveis:")
-    corr = data1.drop(columns=['Unidades da Federação']).corr()
-    fig, ax = plt.subplots(figsize=(10, 6))
-    sns.heatmap(corr, annot=True, cmap='coolwarm', ax=ax)
-    st.pyplot()
+    corr = merged_data.drop(columns=['Unidades da Federação']).corr()
+    st.write(corr)
+
+    # Gráfico de correlação usando Streamlit
+    st.write("Gráfico de Correlação")
+    st.bar_chart(corr)
 
 # Algoritmo de previsão
-def run_prediction(data1):
+def run_prediction(merged_data):
     target_column = "IPQV"  # Alvo a ser previsto
     
-    if target_column not in data1.columns:
-        st.error(f"A coluna {target_column} não foi encontrada em 'data1'.")
+    if target_column not in merged_data.columns:
+        st.error(f"A coluna {target_column} não foi encontrada no DataFrame.")
         return
 
     # Selecionar as variáveis independentes (remover a coluna alvo)
-    X = data1.drop(columns=[target_column, 'Unidades da Federação'])
-    y = data1[target_column]
+    X = merged_data.drop(columns=[target_column, 'Unidades da Federação'])
+    y = merged_data[target_column]
     
     # Normalizar os dados
     scaler = StandardScaler()
@@ -115,13 +112,9 @@ def run_prediction(data1):
         mse = mean_squared_error(y_test, y_pred)
         mse_scores[name] = mse
 
-    # Gráfico de comparação de MSE
+    # Gráfico de comparação de MSE usando Streamlit
     st.write("Comparação de MSE entre os Modelos")
-    fig, ax = plt.subplots()
-    ax.bar(mse_scores.keys(), mse_scores.values(), color='skyblue')
-    ax.set_title('MSE dos Modelos')
-    ax.set_ylabel('MSE')
-    st.pyplot()
+    st.bar_chart(mse_scores)
     
     return mse_scores
 
@@ -130,19 +123,19 @@ def main():
     st.title("Análise de Dados Socioeconômicos e Qualidade de Vida")
     
     # Carregar os dados
-    data1, data2 = load_data()
+    merged_data = load_data()
     
-    # Mostrar os dataframes
-    show_dataframes(data1, data2)
+    # Mostrar os dados combinados
+    show_data(merged_data)
     
     # Estatísticas e gráficos
-    plot_statistics(data1)
+    plot_statistics(merged_data)
     
     # Análise de correlação
-    plot_correlation(data1)
+    plot_correlation(merged_data)
     
     # Rodar previsão
-    mse_scores = run_prediction(data1)
+    mse_scores = run_prediction(merged_data)
     st.write("MSE dos Modelos de Previsão:", mse_scores)
 
 # Executar a aplicação Streamlit
