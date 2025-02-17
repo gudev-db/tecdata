@@ -62,20 +62,10 @@ def plot_statistics(merged_data):
     st.write("Estatísticas Descritivas do Conjunto de Dados Combinados:")
     st.dataframe(merged_data.describe())
     
-    # Gráfico de Barra usando Streamlit
-    st.write("Gráfico de Barra das variáveis socioeconômicas")
-    merged_data.drop(columns=['Unidades da Federação']).mean().plot(kind='bar', color='skyblue', title="Média das Variáveis Socioeconômicas")
-    st.pyplot()
-
-# Análise de Correlação
-def plot_correlation(merged_data):
-    st.write("Correlação entre as variáveis:")
-    corr = merged_data.drop(columns=['Unidades da Federação']).corr()
-    st.write(corr)
-
-    # Gráfico de correlação usando Streamlit
-    st.write("Gráfico de Correlação")
-    st.bar_chart(corr)
+    # Gráfico de Barra usando Streamlit (Média das variáveis socioeconômicas)
+    st.write("Média das Variáveis Socioeconômicas")
+    media_variaveis = merged_data.drop(columns=['Unidades da Federação']).mean()
+    st.bar_chart(media_variaveis)
 
 # Algoritmo de previsão
 def run_prediction(merged_data):
@@ -130,9 +120,6 @@ def main():
     
     # Estatísticas e gráficos
     plot_statistics(merged_data)
-    
-    # Análise de correlação
-    plot_correlation(merged_data)
     
     # Rodar previsão
     mse_scores = run_prediction(merged_data)
