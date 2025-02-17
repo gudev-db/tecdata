@@ -12,43 +12,12 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import RandomForestRegressor
-from streamlit_folium import folium_static  # Importando corretamente a função
 
 st.set_page_config(layout="wide")
 
-# Dicionário com as coordenadas de latitude e longitude dos estados brasileiros
-estado_coords = {
-    'Rondônia': (-11.7795, -63.9026),
-    'Acre': (-8.7742, -70.5558),
-    'Amazonas': (-3.4166, -65.8560),
-    'Roraima': (2.8231, -60.6753),
-    'Pará': (-5.8625, -52.4076),
-    'Amapá': (1.4118, -51.7714),
-    'Tocantins': (-10.1616, -48.3071),
-    'Maranhão': (-5.1106, -44.6000),
-    'Piauí': (-7.1159, -42.2850),
-    'Ceará': (-5.3983, -39.3206),
-    'Rio Grande do Norte': (-5.7945, -36.7820),
-    'Paraíba': (-7.2599, -36.7820),
-    'Pernambuco': (-8.0476, -35.4437),
-    'Alagoas': (-9.5715, -36.7820),
-    'Sergipe': (-10.9472, -37.0731),
-    'Bahia': (-12.5798, -41.7000),
-    'Minas Gerais': (-18.5122, -44.5550),
-    'Espírito Santo': (-19.1805, -40.3085),
-    'Rio de Janeiro': (-22.2550, -42.7750),
-    'São Paulo': (-23.5505, -46.6333),
-    'Paraná': (-25.4284, -49.2733),
-    'Santa Catarina': (-27.5954, -48.5480),
-    'Rio Grande do Sul': (-30.0346, -51.2177),
-    'Mato Grosso do Sul': (-20.4697, -54.6201),
-    'Mato Grosso': (-12.6376, -56.6419),
-    'Goiás': (-16.6869, -49.2647),
-    'Distrito Federal': (-15.7801, -47.9292)
-}
 
 # Carregar os dados
-@st.cache_data
+@st.cache
 def load_data():
     # Simular a leitura de dados CSVs
     data1 = pd.DataFrame({
@@ -101,6 +70,8 @@ def plot_statistics(data1):
     data1.drop(columns=['Unidades da Federação']).mean().plot(kind='bar', color='skyblue', title="Média das Variáveis Socioeconômicas")
     st.pyplot()
 
+
+
 # Análise de Correlação
 def plot_correlation(data1):
     st.write("Correlação entre as variáveis:")
@@ -145,31 +116,35 @@ def run_prediction(data1):
         mse_scores[name] = mse
 
     # Gráfico de comparação de MSE
-    st.write("Comparação de Modelos (MSE):")
-    st.bar_chart(mse_scores)
+    st.write("Comparação de MSE entre os Modelos")
+    fig, ax = plt.subplots()
+    ax.bar(mse_scores.keys(), mse_scores.values(), color='skyblue')
+    ax.set_title('MSE dos Modelos')
+    ax.set_ylabel('MSE')
+    st.pyplot()
+    
+    return mse_scores
 
-# Função principal
+# Interface Streamlit
 def main():
+    st.title("Análise de Dados Socioeconômicos e Qualidade de Vida")
+    
+    # Carregar os dados
     data1, data2 = load_data()
-
+    
+    # Mostrar os dataframes
     show_dataframes(data1, data2)
+    
+    # Estatísticas e gráficos
     plot_statistics(data1)
+    
+    # Análise de correlação
     plot_correlation(data1)
-    run_prediction(data1)
     
-    # Mapa interativo com Folium
-    st.write("Mapa Interativo dos Estados Brasileiros:")
-    m = folium.Map(location=[-14.2350, -51.9253], zoom_start=4)
-    marker_cluster = MarkerCluster().add_to(m)
-    
-    for estado, (lat, lon) in estado_coords.items():
-        folium.Marker(
-            location=[lat, lon],
-            popup=estado,
-            icon=folium.Icon(color='blue', icon='info-sign')
-        ).add_to(marker_cluster)
-    
-    folium_static(m)
+    # Rodar previsão
+    mse_scores = run_prediction(data1)
+    st.write("MSE dos Modelos de Previsão:", mse_scores)
 
+# Executar a aplicação Streamlit
 if __name__ == "__main__":
     main()
