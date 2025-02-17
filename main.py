@@ -2,14 +2,13 @@ import streamlit as st
 import pandas as pd
 import folium
 from folium.plugins import MarkerCluster
+from streamlit_folium import folium_static  # Importação correta do streamlit_folium
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error
 import numpy as np
-import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.preprocessing import StandardScaler
-from sklearn.decomposition import PCA
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import RandomForestRegressor
 
@@ -18,7 +17,6 @@ st.set_page_config(layout="wide")
 # Carregar os dados
 @st.cache
 def load_data():
-    # Simular a leitura de dados CSVs
     data1 = pd.DataFrame({
         'Unidades da Federação': ['Brasil', 'Rondônia', 'Acre', 'Amazonas', 'Roraima', 'Pará', 'Amapá', 'Tocantins', 'Maranhão', 'Piauí', 
                                   'Ceará', 'Rio Grande do Norte', 'Paraíba', 'Pernambuco', 'Alagoas', 'Sergipe', 'Bahia', 'Minas Gerais', 'Espírito Santo', 
@@ -64,18 +62,16 @@ def plot_statistics(data1):
     st.write("Estatísticas Descritivas do Conjunto de Dados:")
     st.dataframe(data1.describe())
     
-    # Gráfico de Barra
+    # Gráfico de Barra nativo do Streamlit
     st.write("Gráfico de Barra das variáveis socioeconômicas")
-    data1.drop(columns=['Unidades da Federação']).mean().plot(kind='bar', color='skyblue', title="Média das Variáveis Socioeconômicas")
-    st.pyplot()
+    mean_values = data1.drop(columns=['Unidades da Federação']).mean()
+    st.bar_chart(mean_values, use_container_width=True)
 
 # Análise de Correlação
 def plot_correlation(data1):
     st.write("Correlação entre as variáveis:")
     corr = data1.drop(columns=['Unidades da Federação']).corr()
-    fig, ax = plt.subplots(figsize=(10, 6))
-    sns.heatmap(corr, annot=True, cmap='coolwarm', ax=ax)
-    st.pyplot()
+    st.write(corr)  # Exibindo a correlação de forma simples no Streamlit
 
 # Algoritmo de previsão
 def run_prediction(data1):
@@ -114,11 +110,7 @@ def run_prediction(data1):
 
     # Gráfico de comparação de MSE
     st.write("Comparação de MSE entre os Modelos")
-    fig, ax = plt.subplots()
-    ax.bar(mse_scores.keys(), mse_scores.values(), color='skyblue')
-    ax.set_title('MSE dos Modelos')
-    ax.set_ylabel('MSE')
-    st.pyplot()
+    st.bar_chart(mse_scores, use_container_width=True)
     
     return mse_scores
 
