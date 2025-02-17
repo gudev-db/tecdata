@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
-import folium
-from folium.plugins import MarkerCluster
+import matplotlib.pyplot as plt
+import seaborn as sns
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error
@@ -9,13 +9,11 @@ import numpy as np
 from sklearn.preprocessing import StandardScaler
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import RandomForestRegressor
-import matplotlib.pyplot as plt
-import seaborn as sns
 
 st.set_page_config(layout="wide")
 
 # Carregar os dados
-@st.cache_data
+@st.cache
 def load_data():
     # Simular a leitura de dados CSVs
     data1 = pd.DataFrame({
@@ -64,33 +62,18 @@ def plot_statistics(merged_data):
     st.write("Estatísticas Descritivas do Conjunto de Dados Combinados:")
     st.dataframe(merged_data.describe())
     
-    # Gráfico de Barra usando Streamlit (Média das variáveis socioeconômicas)
-    st.write("Média das Variáveis Socioeconômicas")
-    media_variaveis = merged_data.drop(columns=['Unidades da Federação']).mean()
-    st.bar_chart(media_variaveis)
-    
-    # Gráfico de Variância por Estado
-    st.write("Variância das Variáveis Socioeconômicas por Estado")
-    variancia_variaveis = merged_data.drop(columns=['Unidades da Federação']).var()
-    st.bar_chart(variancia_variaveis)
-    
-    # Análise visual por estado: Gráfico de Boxplot
-    st.write("Distribuição das Variáveis Socioeconômicas por Estado (Boxplot)")
-    fig, ax = plt.subplots(figsize=(10, 6))
-    sns.boxplot(x='Unidades da Federação', y='B', data=merged_data, ax=ax)
+    # Gráfico de Barra de IPQV por Estado
+    st.write("IPQV por Estado")
+    plt.figure(figsize=(12, 6))
+    sns.barplot(x='Unidades da Federação', y='IPQV', data=merged_data, palette="viridis")
     plt.xticks(rotation=90)
-    st.pyplot(fig)
-    
-    fig, ax = plt.subplots(figsize=(10, 6))
-    sns.boxplot(x='Unidades da Federação', y='K', data=merged_data, ax=ax)
-    plt.xticks(rotation=90)
-    st.pyplot(fig)
+    plt.title('IPQV por Estado')
+    st.pyplot(plt)
 
-    # Gráfico de dispersão (exemplo de relação entre IPQV e B)
-    st.write("Gráfico de Dispersão entre IPQV e B")
-    fig, ax = plt.subplots(figsize=(10, 6))
-    sns.scatterplot(data=merged_data, x='B', y='IPQV', ax=ax)
-    st.pyplot(fig)
+    # Média e Variância do IPQV por Estado
+    st.write("Média e Variância do IPQV por Estado")
+    ipqv_stats = merged_data.groupby('Unidades da Federação')['IPQV'].agg(['mean', 'var']).reset_index()
+    st.dataframe(ipqv_stats)
 
 # Algoritmo de previsão
 def run_prediction(merged_data):
