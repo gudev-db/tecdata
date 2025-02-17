@@ -2,21 +2,23 @@ import streamlit as st
 import pandas as pd
 import folium
 from folium.plugins import MarkerCluster
-from streamlit_folium import folium_static  # Importação correta do streamlit_folium
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error
 import numpy as np
+import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import RandomForestRegressor
 
 st.set_page_config(layout="wide")
 
 # Carregar os dados
-@st.cache
+@st.cache_data
 def load_data():
+    # Simular a leitura de dados CSVs
     data1 = pd.DataFrame({
         'Unidades da Federação': ['Brasil', 'Rondônia', 'Acre', 'Amazonas', 'Roraima', 'Pará', 'Amapá', 'Tocantins', 'Maranhão', 'Piauí', 
                                   'Ceará', 'Rio Grande do Norte', 'Paraíba', 'Pernambuco', 'Alagoas', 'Sergipe', 'Bahia', 'Minas Gerais', 'Espírito Santo', 
@@ -62,16 +64,18 @@ def plot_statistics(data1):
     st.write("Estatísticas Descritivas do Conjunto de Dados:")
     st.dataframe(data1.describe())
     
-    # Gráfico de Barra nativo do Streamlit
+    # Gráfico de Barra
     st.write("Gráfico de Barra das variáveis socioeconômicas")
-    mean_values = data1.drop(columns=['Unidades da Federação']).mean()
-    st.bar_chart(mean_values, use_container_width=True)
+    data1.drop(columns=['Unidades da Federação']).mean().plot(kind='bar', color='skyblue', title="Média das Variáveis Socioeconômicas")
+    st.pyplot()
 
 # Análise de Correlação
 def plot_correlation(data1):
     st.write("Correlação entre as variáveis:")
     corr = data1.drop(columns=['Unidades da Federação']).corr()
-    st.write(corr)  # Exibindo a correlação de forma simples no Streamlit
+    fig, ax = plt.subplots(figsize=(10, 6))
+    sns.heatmap(corr, annot=True, cmap='coolwarm', ax=ax)
+    st.pyplot()
 
 # Algoritmo de previsão
 def run_prediction(data1):
@@ -109,92 +113,32 @@ def run_prediction(data1):
         mse_scores[name] = mse
 
     # Gráfico de comparação de MSE
-    st.write("Comparação de MSE entre os Modelos")
-    st.bar_chart(mse_scores, use_container_width=True)
-    
-    return mse_scores
+    st.write("Comparação de Modelos (MSE):")
+    st.bar_chart(mse_scores)
 
-# Função para filtrar dados por estado e exibir no mapa
-def filter_and_show_map(data1):
-    st.sidebar.header("Filtrar por Estado")
-    estados = data1['Unidades da Federação'].unique()
-    selected_state = st.sidebar.selectbox("Selecione um estado", estados)
-    
-    filtered_data = data1[data1['Unidades da Federação'] == selected_state]
-    
-    if not filtered_data.empty:
-        st.write(f"Dados para o estado de {selected_state}:")
-        st.dataframe(filtered_data)
-        
-        # Coordenadas aproximadas dos estados brasileiros (latitude, longitude)
-        coordenadas_estados = {
-            'Brasil': [-14.2350, -51.9253],
-            'Rondônia': [-11.5057, -63.5806],
-            'Acre': [-9.0238, -70.8120],
-            'Amazonas': [-3.4653, -62.2159],
-            'Roraima': [2.7376, -62.0751],
-            'Pará': [-5.4984, -52.9564],
-            'Amapá': [1.4136, -51.5811],
-            'Tocantins': [-10.1753, -48.2982],
-            'Maranhão': [-4.9609, -45.2744],
-            'Piauí': [-7.7183, -42.7289],
-            'Ceará': [-5.4984, -39.3206],
-            'Rio Grande do Norte': [-5.7945, -36.5947],
-            'Paraíba': [-7.2396, -36.7827],
-            'Pernambuco': [-8.8137, -36.9541],
-            'Alagoas': [-9.5713, -36.7819],
-            'Sergipe': [-10.5741, -37.3857],
-            'Bahia': [-12.5797, -41.7007],
-            'Minas Gerais': [-18.5122, -44.5550],
-            'Espírito Santo': [-19.1834, -40.3089],
-            'Rio de Janeiro': [-22.9068, -43.1729],
-            'São Paulo': [-23.5505, -46.6333],
-            'Paraná': [-24.7953, -51.7645],
-            'Santa Catarina': [-27.2423, -50.2189],
-            'Rio Grande do Sul': [-30.0346, -51.2177],
-            'Mato Grosso do Sul': [-20.7722, -54.7852],
-            'Mato Grosso': [-12.6819, -56.9211],
-            'Goiás': [-15.8270, -49.8362],
-            'Distrito Federal': [-15.7942, -47.8825]
-        }
-        
-        # Criar o mapa
-        mapa = folium.Map(location=coordenadas_estados[selected_state], zoom_start=6)
-        
-        # Adicionar marcador para o estado selecionado
-        folium.Marker(
-            location=coordenadas_estados[selected_state],
-            popup=f"{selected_state}",
-            icon=folium.Icon(color='blue')
-        ).add_to(mapa)
-        
-        # Exibir o mapa no Streamlit
-        st.write(f"Mapa do estado de {selected_state}:")
-        folium_static(mapa)
-
-# Interface Streamlit
+# Função principal
 def main():
-    st.title("Análise de Dados Socioeconômicos e Qualidade de Vida")
-    
-    # Carregar os dados
     data1, data2 = load_data()
-    
-    # Mostrar os dataframes
-    show_dataframes(data1, data2)
-    
-    # Estatísticas e gráficos
-    plot_statistics(data1)
-    
-    # Análise de correlação
-    plot_correlation(data1)
-    
-    # Rodar previsão
-    mse_scores = run_prediction(data1)
-    st.write("MSE dos Modelos de Previsão:", mse_scores)
-    
-    # Filtrar por estado e exibir no mapa
-    filter_and_show_map(data1)
 
-# Executar a aplicação Streamlit
+    show_dataframes(data1, data2)
+    plot_statistics(data1)
+    plot_correlation(data1)
+    run_prediction(data1)
+    
+    # Adicionando o mapa
+    st.write("Mapa de Localização")
+    m = folium.Map(location=[-15.7801, -47.9292], zoom_start=4)  # Coordenadas do Brasil
+    
+    # Adicionando clusters de marcações
+    marker_cluster = MarkerCluster().add_to(m)
+    for index, row in data1.iterrows():
+        folium.Marker(
+            location=[-15.7801, -47.9292],  # Coordenadas para fins de demonstração
+            popup=f"UF: {row['Unidades da Federação']}, IPQV: {row['IPQV']}, B: {row['B']}, K: {row['K']}"
+        ).add_to(marker_cluster)
+    
+    # Exibir o mapa no Streamlit
+    folium_static(m)
+
 if __name__ == "__main__":
     main()
