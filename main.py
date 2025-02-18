@@ -72,14 +72,13 @@ def plot_statistics(merged_data):
         filtered_data = merged_data[merged_data['Unidades da Federação'] == selected_state]
         
         if not filtered_data.empty:
-            # Média e Variância do IPQV para o estado selecionado
-            ipqv_stats = filtered_data[['IPQV']].agg(['mean', 'var']).reset_index()
-            st.write(f"Média e Variância do IPQV para o estado {selected_state}:")
-            st.dataframe(ipqv_stats)
+            # Exibir a linha inteira de dados para o estado selecionado
+            st.write(f"Dados para o estado {selected_state}:")
+            st.dataframe(filtered_data)
         else:
             st.write(f"Nenhum dado encontrado para o estado {selected_state}.")
     else:
-        st.write("Selecione um estado no mapa para ver a média e variância do IPQV.")
+        st.write("Selecione um estado no mapa para ver os dados completos.")
     
     # Gráfico de Barra de IPQV por Estado
     st.write("IPQV por Estado")
