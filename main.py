@@ -133,24 +133,9 @@ def run_prediction(merged_data):
         st.write(f"Erro Médio Quadrático (MSE): {mse:.4f}")
         st.write(f"Raiz do Erro Médio Quadrático (RMSE): {rmse:.4f}")
         
-        # Exibir a comparação entre o valor real e a previsão em 3 colunas
+        # Exibir a comparação entre o valor real e a previsão
         prediction_df = pd.DataFrame({'Real': y_test, 'Previsto': y_pred})
-        
-        # Criar 3 colunas para exibir as previsões
-        for i in range(0, len(prediction_df), 3):
-            col1, col2, col3 = st.columns(3)
-            
-            with col1:
-                st.write(prediction_df.iloc[i:i+1, 0])  # Exibir "Real"
-            with col2:
-                st.write(prediction_df.iloc[i:i+1, 1])  # Exibir "Previsto"
-            with col3:
-                if i + 2 < len(prediction_df):
-                    st.write(prediction_df.iloc[i+2:i+3, 0])  # Exibir próximo "Real"
-                    st.write(prediction_df.iloc[i+2:i+3, 1])  # Exibir próximo "Previsto"
-
-
-
+        st.write(prediction_df)
 
 
 # Exibir o aplicativo
