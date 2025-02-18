@@ -60,10 +60,26 @@ def show_data(merged_data):
     st.write("Dados Combinados (merge entre data1 e data2)")
     st.dataframe(merged_data)
 
-# Estatísticas e Gráficos
 def plot_statistics(merged_data):
     st.write("Estatísticas Descritivas do Conjunto de Dados Combinados:")
     st.dataframe(merged_data.describe())
+    
+    # Verificar se um estado foi selecionado
+    if 'selected_state' in st.session_state and st.session_state.selected_state:
+        selected_state = st.session_state.selected_state
+        
+        # Filtrar os dados para o estado selecionado
+        filtered_data = merged_data[merged_data['Unidades da Federação'] == selected_state]
+        
+        if not filtered_data.empty:
+            # Média e Variância do IPQV para o estado selecionado
+            ipqv_stats = filtered_data[['IPQV']].agg(['mean', 'var']).reset_index()
+            st.write(f"Média e Variância do IPQV para o estado {selected_state}:")
+            st.dataframe(ipqv_stats)
+        else:
+            st.write(f"Nenhum dado encontrado para o estado {selected_state}.")
+    else:
+        st.write("Selecione um estado no mapa para ver a média e variância do IPQV.")
     
     # Gráfico de Barra de IPQV por Estado
     st.write("IPQV por Estado")
@@ -73,10 +89,6 @@ def plot_statistics(merged_data):
     plt.title('IPQV por Estado')
     st.pyplot(plt)
 
-    # Média e Variância do IPQV por Estado
-    st.write("Média e Variância do IPQV por Estado")
-    ipqv_stats = merged_data.groupby('Unidades da Federação')['IPQV'].agg(['mean', 'var']).reset_index()
-    st.dataframe(ipqv_stats)
 
 def plot_map(merged_data):
     # Carregar o arquivo GeoJSON
