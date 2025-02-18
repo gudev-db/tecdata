@@ -87,8 +87,9 @@ def plot_map(merged_data):
     m = folium.Map(location=[-14.2350, -51.9253], zoom_start=4)
     
     # Função para capturar o clique no estado
-    def on_click(feature):
-        state_name = feature['properties']['name']  # Nome do estado clicado no GeoJSON
+    def on_click(event):
+        # Extrair o nome do estado a partir da feature do GeoJSON
+        state_name = event['properties']['name']  # Nome do estado clicado no GeoJSON
         st.session_state.selected_state = state_name  # Armazenar no estado da sessão
         st.write(f"Estado selecionado: {state_name}")
         
@@ -108,8 +109,7 @@ def plot_map(merged_data):
         name="Brasil", 
         tooltip="Clique para selecionar o estado",
         highlight_function=lambda x: {'weight': 3, 'color': 'blue'},
-        popup=folium.Popup("Clique no estado", max_width=300),
-        on_click=on_click
+        popup=folium.Popup("Clique no estado", max_width=300)
     ).add_to(m)
     
     # Exibir o mapa no Streamlit
@@ -119,6 +119,7 @@ def plot_map(merged_data):
     if 'selected_state' in st.session_state and st.session_state.selected_state:
         selected_state = st.session_state.selected_state
         st.write(f"IPQV no estado {selected_state}: {st.session_state.real_ipqv:.3f}" if st.session_state.real_ipqv else "Dados não encontrados para o estado.")
+
 
 
 
