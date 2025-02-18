@@ -98,18 +98,28 @@ def plot_map(merged_data):
         # Exibir o valor real de IPQV para o estado selecionado
         if not filtered_data.empty:
             real_ipqv = filtered_data['IPQV'].values[0]
-            st.write(f"IPQV no estado {state_name}: {real_ipqv:.3f}")
-        
-        # Exibir o DataFrame filtrado
-        st.write(filtered_data)
+            st.session_state.real_ipqv = real_ipqv  # Armazenar o IPQV no estado da sessão
+        else:
+            st.session_state.real_ipqv = None
     
     # Adicionar camada GeoJSON com interatividade
-    folium.GeoJson(geojson_data, name="Brasil", tooltip="Clique para selecionar o estado",
-                   highlight_function=lambda x: {'weight': 3, 'color': 'blue'},
-                   popup=folium.Popup("Clique no estado")).add_to(m)
+    folium.GeoJson(
+        geojson_data, 
+        name="Brasil", 
+        tooltip="Clique para selecionar o estado",
+        highlight_function=lambda x: {'weight': 3, 'color': 'blue'},
+        popup=folium.Popup("Clique no estado", max_width=300),
+        on_click=on_click
+    ).add_to(m)
     
     # Exibir o mapa no Streamlit
     st_folium(m, width=725)
+    
+    # Mostrar o valor de IPQV do estado selecionado abaixo do mapa
+    if 'selected_state' in st.session_state and st.session_state.selected_state:
+        selected_state = st.session_state.selected_state
+        st.write(f"IPQV no estado {selected_state}: {st.session_state.real_ipqv:.3f}" if st.session_state.real_ipqv else "Dados não encontrados para o estado.")
+
 
 
 
