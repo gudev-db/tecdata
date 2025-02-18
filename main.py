@@ -91,10 +91,18 @@ def plot_map(merged_data):
         state_name = feature['properties']['name']  # Nome do estado clicado no GeoJSON
         st.session_state.selected_state = state_name  # Armazenar no estado da sessão
         st.write(f"Estado selecionado: {state_name}")
+        
         # Filtrar os dados para o estado selecionado
         filtered_data = merged_data[merged_data['Unidades da Federação'] == state_name]
-        st.write(filtered_data)
         
+        # Exibir o valor real de IPQV para o estado selecionado
+        if not filtered_data.empty:
+            real_ipqv = filtered_data['IPQV'].values[0]
+            st.write(f"Valor real de IPQV para o estado {state_name}: {real_ipqv:.3f}")
+        
+        # Exibir o DataFrame filtrado
+        st.write(filtered_data)
+    
     # Adicionar camada GeoJSON com interatividade
     folium.GeoJson(geojson_data, name="Brasil", tooltip="Clique para selecionar o estado",
                    highlight_function=lambda x: {'weight': 3, 'color': 'blue'},
@@ -102,6 +110,7 @@ def plot_map(merged_data):
     
     # Exibir o mapa no Streamlit
     st_folium(m, width=725)
+
 
 
 def run_prediction(merged_data):
