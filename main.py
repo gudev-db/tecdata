@@ -14,7 +14,7 @@ from streamlit_folium import st_folium
 import json
 
 st.set_page_config(layout="wide")
-
+#
 # Carregar os dados
 @st.cache
 def load_data():
@@ -55,21 +55,88 @@ def load_data():
     
     return merged_data
 
-# Exibir os dados combinados
+# Exibir o DataFrame merge
 def show_data(merged_data):
     st.write("Dados Combinados (merge entre data1 e data2)")
     st.dataframe(merged_data)
 
-# Função para remover as 3 colunas com menor correlação com o IPQV
-def remove_weak_correlations(merged_data):
-    corr_matrix = merged_data.corr()
-    ipqv_corr = corr_matrix["IPQV"].abs()
-    weak_columns = ipqv_corr.nsmallest(4).index[1:].tolist()  # Remove "IPQV" da lista
-    reduced_data = merged_data.drop(columns=weak_columns)
-    return reduced_data, weak_columns
+def plot_statistics(merged_data):
+    st.write("Estatísticas Descritivas do Conjunto de Dados Combinados:")
+    st.dataframe(merged_data.describe())
+    
+    # Verificar se um estado foi selecionado
+    if 'selected_state' in st.session_state and st.session_state.selected_state:
+        selected_state = st.session_state.selected_state
+        
+        # Filtrar os dados para o estado selecionado
+        filtered_data = merged_data[merged_data['Unidades da Federação'] == selected_state]
+        
+        if not filtered_data.empty:
+            # Exibir a linha inteira de dados para o estado selecionado
+            st.write(f"Dados para o estado {selected_state}:")
+            st.dataframe(filtered_data)
+        else:
+            st.write(f"Nenhum dado encontrado para o estado {selected_state}.")
+    else:
+        st.write("Selecione um estado no mapa para ver os dados completos.")
+    
+    # Gráfico de Barra de IPQV por Estado
+    st.write("IPQV por Estado")
+    plt.figure(figsize=(12, 6))
+    sns.barplot(x='Unidades da Federação', y='IPQV', data=merged_data, palette="viridis")
+    plt.xticks(rotation=90)
+    plt.title('IPQV por Estado')
+    st.pyplot(plt)
 
-# Pré-processamento e previsão
-def run_prediction(merged_data, reduced_data):
+
+def plot_map(merged_data):
+    # Carregar o arquivo GeoJSON
+    with open('br_states.json', 'r', encoding='utf-8') as f:
+        geojson_data = json.load(f)
+    
+    # Criar o mapa Folium
+    m = folium.Map(location=[-14.2350, -51.9253], zoom_start=4)
+    
+    # Função para capturar o clique no estado
+    def on_click(event):
+        # Extrair o nome do estado a partir da feature do GeoJSON
+        state_name = event['properties']['name']  # Nome do estado clicado no GeoJSON
+        st.session_state.selected_state = state_name  # Armazenar no estado da sessão
+        st.write(f"Estado selecionado: {state_name}")
+        
+        # Filtrar os dados para o estado selecionado
+        filtered_data = merged_data[merged_data['Unidades da Federação'] == state_name]
+        
+        # Exibir o valor real de IPQV para o estado selecionado
+        if not filtered_data.empty:
+            real_ipqv = filtered_data['IPQV'].values[0]
+            st.session_state.real_ipqv = real_ipqv  # Armazenar o IPQV no estado da sessão
+        else:
+            st.session_state.real_ipqv = None
+    
+    # Adicionar camada GeoJSON com interatividade
+    folium.GeoJson(
+        geojson_data, 
+        name="Brasil", 
+        tooltip="Clique para selecionar o estado",
+        highlight_function=lambda x: {'weight': 3, 'color': 'blue'},
+        popup=folium.Popup("Clique no estado", max_width=300)
+    ).add_to(m)
+    
+    # Exibir o mapa no Streamlit
+    st_folium(m, width=725)
+    
+    # Mostrar o valor de IPQV do estado selecionado abaixo do mapa
+    if 'selected_state' in st.session_state and st.session_state.selected_state:
+        selected_state = st.session_state.selected_state
+        st.write(f"IPQV no estado {selected_state}: {st.session_state.real_ipqv:.3f}" if st.session_state.real_ipqv else "Dados não encontrados para o estado.")
+
+
+
+
+
+
+def run_prediction(merged_data):
     target_column = "IPQV"  # Alvo a ser previsto
     
     if target_column not in merged_data.columns:
@@ -77,26 +144,13 @@ def run_prediction(merged_data, reduced_data):
         return
 
     # Selecionar as variáveis independentes (removendo o alvo)
-    features_merged = merged_data.drop(columns=[target_column, 'Unidades da Federação'])
-    features_reduced = reduced_data.drop(columns=[target_column, 'Unidades da Federação'])
+    features = merged_data.drop(columns=[target_column, 'Unidades da Federação'])
 
     # Separar os dados em treino e teste
-    X_merged = features_merged
-    y_merged = merged_data[target_column]
+    X = features
+    y = merged_data[target_column]
     
-    X_reduced = features_reduced
-    y_reduced = reduced_data[target_column]
-    
-    X_train_merged, X_test_merged, y_train_merged, y_test_merged = train_test_split(X_merged, y_merged, test_size=0.2, random_state=42)
-    X_train_reduced, X_test_reduced, y_train_reduced, y_test_reduced = train_test_split(X_reduced, y_reduced, test_size=0.2, random_state=42)
-    
-    # StandardScaler
-    scaler = StandardScaler()
-    X_train_merged = scaler.fit_transform(X_train_merged)
-    X_test_merged = scaler.transform(X_test_merged)
-    
-    X_train_reduced = scaler.fit_transform(X_train_reduced)
-    X_test_reduced = scaler.transform(X_test_reduced)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
     
     # Modelos para comparação
     models = {
@@ -105,29 +159,45 @@ def run_prediction(merged_data, reduced_data):
         "Floresta Aleatória": RandomForestRegressor()
     }
 
-    mse_results = {"Merged Data": [], "Reduced Data": []}
-    
     for model_name, model in models.items():
         st.write(f"Modelo: {model_name}")
         
-        # Treinar os modelos para os dois DataFrames
-        model.fit(X_train_merged, y_train_merged)
-        y_pred_merged = model.predict(X_test_merged)
-        mse_merged = mean_squared_error(y_test_merged, y_pred_merged)
-        mse_results["Merged Data"].append(mse_merged)
+        # Treinar o modelo
+        model.fit(X_train, y_train)
         
-        model.fit(X_train_reduced, y_train_reduced)
-        y_pred_reduced = model.predict(X_test_reduced)
-        mse_reduced = mean_squared_error(y_test_reduced, y_pred_reduced)
-        mse_results["Reduced Data"].append(mse_reduced)
+        # Fazer previsões
+        y_pred = model.predict(X_test)
         
-        st.write(f"Erro Médio Quadrático (MSE) para {model_name} com dados completos: {mse_merged:.4f}")
-        st.write(f"Erro Médio Quadrático (MSE) para {model_name} com dados reduzidos: {mse_reduced:.4f}")
-    
-    # Comparar os MSEs
-    mse_df = pd.DataFrame(mse_results, index=[model_name for model_name in models.keys()])
-    st.write("Comparação dos MSEs entre os modelos")
-    st.dataframe(mse_df)
+        # Avaliar o modelo
+        mse = mean_squared_error(y_test, y_pred)
+        rmse = np.sqrt(mse)
+        
+        st.write(f"Erro Médio Quadrático (MSE): {mse:.4f}")
+        st.write(f"Raiz do Erro Médio Quadrático (RMSE): {rmse:.4f}")
+        
+        # Adicionar os nomes dos estados aos dados de previsão
+        prediction_df = pd.DataFrame({
+            'Unidades da Federação': merged_data.loc[y_test.index, 'Unidades da Federação'],
+            'Real': y_test,
+            'Previsto': y_pred
+        })
+        
+        # Definir o nome dos estados como índice
+        prediction_df.set_index('Unidades da Federação', inplace=True)
+        
+        # Exibir a comparação
+        st.write(prediction_df)
+        
+        # Plotando a comparação
+        plt.figure(figsize=(12, 6))
+        sns.barplot(x=prediction_df.index, y='Real', data=prediction_df, color='blue', alpha=0.6, label='Real')
+        sns.barplot(x=prediction_df.index, y='Previsto', data=prediction_df, color='red', alpha=0.6, label='Previsto')
+        plt.xticks(rotation=90)
+        plt.title(f"Comparação entre valores reais e previstos - {model_name}")
+        plt.legend()
+        st.pyplot(plt)
+
+
 
 # Exibir o aplicativo
 def main():
@@ -136,23 +206,14 @@ def main():
     # Mostrar os dados
     show_data(merged_data)
     
-    # Exibir o mapa
-    st.write("Mapa Interativo com as Unidades da Federação")
-    mapa = folium.Map(location=[-15.7801, -47.9292], zoom_start=4)
+    # Estatísticas e Gráficos
+    plot_statistics(merged_data)
     
-    # Adicionando marcadores de exemplo (a localização pode ser alterada conforme necessário)
-    for idx, row in merged_data.iterrows():
-        folium.Marker([row["IPQV"], row["B"]], popup=row["Unidades da Federação"]).add_to(mapa)
+    # Mapa
+    plot_map(merged_data)
     
-    # Exibir o mapa no Streamlit
-    st_folium(mapa, width=700, height=500)
-
-    # Remover colunas com as correlações mais fracas
-    reduced_data, weak_columns = remove_weak_correlations(merged_data)
-    st.write(f"Colunas removidas por correlação fraca com IPQV: {weak_columns}")
-    
-    # Previsão com os dois DataFrames
-    run_prediction(merged_data, reduced_data)
+    # Previsão
+    run_prediction(merged_data)
 
 if __name__ == "__main__":
     main()
