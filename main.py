@@ -98,7 +98,7 @@ def plot_map(merged_data):
         # Exibir o valor real de IPQV para o estado selecionado
         if not filtered_data.empty:
             real_ipqv = filtered_data['IPQV'].values[0]
-            st.write(f"Valor real de IPQV para o estado {state_name}: {real_ipqv:.3f}")
+            st.write(f"IPQV no estado {state_name}: {real_ipqv:.3f}")
         
         # Exibir o DataFrame filtrado
         st.write(filtered_data)
@@ -110,6 +110,7 @@ def plot_map(merged_data):
     
     # Exibir o mapa no Streamlit
     st_folium(m, width=725)
+
 
 
 
