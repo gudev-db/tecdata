@@ -110,23 +110,33 @@ def run_prediction(merged_data):
     
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
     
-    # Treinar o modelo
-    model = LinearRegression()  # Usando regressão linear como exemplo
-    model.fit(X_train, y_train)
-    
-    # Fazer previsões
-    y_pred = model.predict(X_test)
-    
-    # Avaliar o modelo
-    mse = mean_squared_error(y_test, y_pred)
-    rmse = np.sqrt(mse)
-    
-    st.write(f"Erro Médio Quadrático (MSE): {mse:.4f}")
-    st.write(f"Raiz do Erro Médio Quadrático (RMSE): {rmse:.4f}")
+    # Modelos para comparação
+    models = {
+        "Regressão Linear": LinearRegression(),
+        "Árvore de Decisão": DecisionTreeRegressor(),
+        "Floresta Aleatória": RandomForestRegressor()
+    }
 
-    # Exibir a comparação entre o valor real e a previsão
-    prediction_df = pd.DataFrame({'Real': y_test, 'Previsto': y_pred})
-    st.write(prediction_df)
+    for model_name, model in models.items():
+        st.write(f"Modelo: {model_name}")
+        
+        # Treinar o modelo
+        model.fit(X_train, y_train)
+        
+        # Fazer previsões
+        y_pred = model.predict(X_test)
+        
+        # Avaliar o modelo
+        mse = mean_squared_error(y_test, y_pred)
+        rmse = np.sqrt(mse)
+        
+        st.write(f"Erro Médio Quadrático (MSE): {mse:.4f}")
+        st.write(f"Raiz do Erro Médio Quadrático (RMSE): {rmse:.4f}")
+        
+        # Exibir a comparação entre o valor real e a previsão
+        prediction_df = pd.DataFrame({'Real': y_test, 'Previsto': y_pred})
+        st.write(prediction_df)
+
 
 # Exibir o aplicativo
 def main():
