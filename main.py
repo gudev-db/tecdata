@@ -78,7 +78,6 @@ def plot_statistics(merged_data):
     ipqv_stats = merged_data.groupby('Unidades da Federação')['IPQV'].agg(['mean', 'var']).reset_index()
     st.dataframe(ipqv_stats)
 
-# Adicionando o mapa com o arquivo GeoJSON
 def plot_map(merged_data):
     # Carregar o arquivo GeoJSON
     with open('br_states.json', 'r', encoding='utf-8') as f:
@@ -87,11 +86,23 @@ def plot_map(merged_data):
     # Criar o mapa Folium
     m = folium.Map(location=[-14.2350, -51.9253], zoom_start=4)
     
-    # Adicionar camada GeoJSON
-    folium.GeoJson(geojson_data).add_to(m)
+    # Função para capturar o clique no estado
+    def on_click(feature):
+        state_name = feature['properties']['name']  # Nome do estado clicado no GeoJSON
+        st.session_state.selected_state = state_name  # Armazenar no estado da sessão
+        st.write(f"Estado selecionado: {state_name}")
+        # Filtrar os dados para o estado selecionado
+        filtered_data = merged_data[merged_data['Unidades da Federação'] == state_name]
+        st.write(filtered_data)
+        
+    # Adicionar camada GeoJSON com interatividade
+    folium.GeoJson(geojson_data, name="Brasil", tooltip="Clique para selecionar o estado",
+                   highlight_function=lambda x: {'weight': 3, 'color': 'blue'},
+                   popup=folium.Popup("Clique no estado")).add_to(m)
     
     # Exibir o mapa no Streamlit
     st_folium(m, width=725)
+
 
 def run_prediction(merged_data):
     target_column = "IPQV"  # Alvo a ser previsto
