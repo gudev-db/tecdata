@@ -1,3 +1,4 @@
+import folium
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -9,6 +10,8 @@ import numpy as np
 from sklearn.preprocessing import StandardScaler
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import RandomForestRegressor
+from streamlit_folium import st_folium
+import json
 
 st.set_page_config(layout="wide")
 
@@ -75,6 +78,21 @@ def plot_statistics(merged_data):
     ipqv_stats = merged_data.groupby('Unidades da Federação')['IPQV'].agg(['mean', 'var']).reset_index()
     st.dataframe(ipqv_stats)
 
+# Adicionando o mapa com o arquivo GeoJSON
+def plot_map(merged_data):
+    # Carregar o arquivo GeoJSON
+    with open('br_states.json', 'r', encoding='utf-8') as f:
+        geojson_data = json.load(f)
+    
+    # Criar o mapa Folium
+    m = folium.Map(location=[-14.2350, -51.9253], zoom_start=4)
+    
+    # Adicionar camada GeoJSON
+    folium.GeoJson(geojson_data).add_to(m)
+    
+    # Exibir o mapa no Streamlit
+    st_folium(m, width=725)
+
 # Algoritmo de previsão
 def run_prediction(merged_data):
     target_column = "IPQV"  # Alvo a ser previsto
@@ -83,56 +101,48 @@ def run_prediction(merged_data):
         st.error(f"A coluna {target_column} não foi encontrada no DataFrame.")
         return
 
-    # Selecionar as variáveis independentes (remover a coluna alvo)
-    X = merged_data.drop(columns=[target_column, 'Unidades da Federação'])
+    # Selecionar as variáveis independentes (removendo o alvo)
+    features = merged_data.drop(columns=[target_column, 'Unidades da Federação'])
+
+    # Separar os dados em treino e teste
+    X = features
     y = merged_data[target_column]
     
-    # Normalizar os dados
-    scaler = StandardScaler()
-    X_scaled = scaler.fit_transform(X)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
     
-    # Dividir os dados em treino e teste
-    X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, random_state=42)
+    # Treinar o modelo
+    model = LinearRegression()  # Usando regressão linear como exemplo
+    model.fit(X_train, y_train)
     
-    # Modelos de Regressão
-    models = {
-        "Regressão Linear": LinearRegression(),
-        "Árvore de Decisão": DecisionTreeRegressor(),
-        "Random Forest": RandomForestRegressor()
-    }
+    # Fazer previsões
+    y_pred = model.predict(X_test)
     
-    mse_scores = {}
+    # Avaliar o modelo
+    mse = mean_squared_error(y_test, y_pred)
+    rmse = np.sqrt(mse)
     
-    # Treinar e avaliar os modelos
-    for name, model in models.items():
-        model.fit(X_train, y_train)
-        y_pred = model.predict(X_test)
-        mse = mean_squared_error(y_test, y_pred)
-        mse_scores[name] = mse
+    st.write(f"Erro Médio Quadrático (MSE): {mse:.4f}")
+    st.write(f"Raiz do Erro Médio Quadrático (RMSE): {rmse:.4f}")
 
-    # Gráfico de comparação de MSE usando Streamlit
-    st.write("Comparação de MSE entre os Modelos")
-    st.bar_chart(mse_scores)
-    
-    return mse_scores
+    # Exibir a comparação entre o valor real e a previsão
+    prediction_df = pd.DataFrame({'Real': y_test, 'Previsto': y_pred})
+    st.write(prediction_df)
 
-# Interface Streamlit
+# Exibir o aplicativo
 def main():
-    st.title("Análise de Dados Socioeconômicos e Qualidade de Vida")
-    
-    # Carregar os dados
     merged_data = load_data()
     
-    # Mostrar os dados combinados
+    # Mostrar os dados
     show_data(merged_data)
     
-    # Estatísticas e gráficos
+    # Estatísticas e Gráficos
     plot_statistics(merged_data)
     
-    # Rodar previsão
-    mse_scores = run_prediction(merged_data)
-    st.write("MSE dos Modelos de Previsão:", mse_scores)
+    # Mapa
+    plot_map(merged_data)
+    
+    # Previsão
+    run_prediction(merged_data)
 
-# Executar a aplicação Streamlit
 if __name__ == "__main__":
     main()
