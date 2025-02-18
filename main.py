@@ -135,7 +135,11 @@ def run_prediction(merged_data):
         
         # Exibir a comparação entre o valor real e a previsão
         prediction_df = pd.DataFrame({'Real': y_test, 'Previsto': y_pred})
-        st.write(prediction_df)
+        
+        # Exibir resultados em 3 colunas
+        for i in range(0, len(prediction_df), 3):
+            st.write(prediction_df.iloc[i:i+3])  # Exibe 3 resultados por vez
+
 
 
 # Exibir o aplicativo
