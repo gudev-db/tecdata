@@ -136,9 +136,18 @@ def run_prediction(merged_data):
         # Exibir a comparação entre o valor real e a previsão
         prediction_df = pd.DataFrame({'Real': y_test, 'Previsto': y_pred})
         
-        # Exibir resultados em 3 colunas
+        # Criar 3 colunas para mostrar as previsões lado a lado
         for i in range(0, len(prediction_df), 3):
-            st.write(prediction_df.iloc[i:i+3])  # Exibe 3 resultados por vez
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.write(prediction_df.iloc[i:i+1, 0])  # Exibir "Real"
+            with col2:
+                st.write(prediction_df.iloc[i:i+1, 1])  # Exibir "Previsto"
+            with col3:
+                if i+2 < len(prediction_df):
+                    st.write(prediction_df.iloc[i+2:i+3, 0])  # Exibir próximo "Real"
+                    st.write(prediction_df.iloc[i+2:i+3, 1])  # Exibir próximo "Previsto"
+
 
 
 
