@@ -7,14 +7,13 @@ from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error
 import numpy as np
-from sklearn.preprocessing import StandardScaler
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import RandomForestRegressor
 from streamlit_folium import st_folium
 import json
 
 st.set_page_config(layout="wide")
-#
+
 # Carregar os dados
 @st.cache
 def load_data():
@@ -55,43 +54,10 @@ def load_data():
     
     return merged_data
 
-# Exibir o DataFrame merge
+# Exibir os dados
 def show_data(merged_data):
     st.write("Dados Combinados (merge entre data1 e data2)")
     st.dataframe(merged_data)
-
-# Estatísticas e Gráficos
-def plot_statistics(merged_data):
-    st.write("Estatísticas Descritivas do Conjunto de Dados Combinados:")
-    st.dataframe(merged_data.describe())
-    
-    # Gráfico de Barra de IPQV por Estado
-    st.write("IPQV por Estado")
-    plt.figure(figsize=(12, 6))
-    sns.barplot(x='Unidades da Federação', y='IPQV', data=merged_data, palette="viridis")
-    plt.xticks(rotation=90)
-    plt.title('IPQV por Estado')
-    st.pyplot(plt)
-
-    # Média e Variância do IPQV por Estado
-    st.write("Média e Variância do IPQV por Estado")
-    ipqv_stats = merged_data.groupby('Unidades da Federação')['IPQV'].agg(['mean', 'var']).reset_index()
-    st.dataframe(ipqv_stats)
-
-# Adicionando o mapa com o arquivo GeoJSON
-def plot_map(merged_data):
-    # Carregar o arquivo GeoJSON
-    with open('br_states.json', 'r', encoding='utf-8') as f:
-        geojson_data = json.load(f)
-    
-    # Criar o mapa Folium
-    m = folium.Map(location=[-14.2350, -51.9253], zoom_start=4)
-    
-    # Adicionar camada GeoJSON
-    folium.GeoJson(geojson_data).add_to(m)
-    
-    # Exibir o mapa no Streamlit
-    st_folium(m, width=725)
 
 # Algoritmo de previsão
 def run_prediction(merged_data):
@@ -117,42 +83,54 @@ def run_prediction(merged_data):
         "Floresta Aleatória": RandomForestRegressor()
     }
 
+    predictions = {}
+    
     for model_name, model in models.items():
-        st.write(f"Modelo: {model_name}")
-        
         # Treinar o modelo
         model.fit(X_train, y_train)
         
         # Fazer previsões
         y_pred = model.predict(X_test)
         
-        # Avaliar o modelo
-        mse = mean_squared_error(y_test, y_pred)
-        rmse = np.sqrt(mse)
-        
-        st.write(f"Erro Médio Quadrático (MSE): {mse:.4f}")
-        st.write(f"Raiz do Erro Médio Quadrático (RMSE): {rmse:.4f}")
-        
-        # Exibir a comparação entre o valor real e a previsão
-        prediction_df = pd.DataFrame({'Real': y_test, 'Previsto': y_pred})
-        st.write(prediction_df)
+        # Armazenar as previsões
+        predictions[model_name] = (y_test, y_pred)
+    
+    return predictions
 
+# Adicionar mapa interativo e exibir comparações
+def plot_map(merged_data, predictions):
+    # Carregar o arquivo GeoJSON
+    with open('br_states.json', 'r', encoding='utf-8') as f:
+        geojson_data = json.load(f)
+    
+    # Criar o mapa Folium
+    m = folium.Map(location=[-14.2350, -51.9253], zoom_start=4)
+    
+    # Adicionar camada GeoJSON
+    folium.GeoJson(geojson_data).add_to(m)
+    
+    # Exibir o mapa no Streamlit
+    st_folium(m, width=725)
+    
+    # Adicionar interatividade para mostrar as comparações
+    for model_name, (y_test, y_pred) in predictions.items():
+        for state, real, pred in zip(merged_data['Unidades da Federação'], y_test, y_pred):
+            st.write(f"Estado: {state}")
+            st.write(f"Modelo: {model_name}")
+            st.write(f"Real: {real}")
+            st.write(f"Previsto: {pred}")
+            st.write("------")
 
 # Exibir o aplicativo
 def main():
     merged_data = load_data()
+    predictions = run_prediction(merged_data)
     
     # Mostrar os dados
     show_data(merged_data)
     
-    # Estatísticas e Gráficos
-    plot_statistics(merged_data)
-    
-    # Mapa
-    plot_map(merged_data)
-    
-    # Previsão
-    run_prediction(merged_data)
+    # Mapa interativo
+    plot_map(merged_data, predictions)
 
 if __name__ == "__main__":
     main()
