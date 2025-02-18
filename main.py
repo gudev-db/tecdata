@@ -14,7 +14,7 @@ from streamlit_folium import st_folium
 import json
 
 st.set_page_config(layout="wide")
-
+#
 # Carregar os dados
 @st.cache
 def load_data():
