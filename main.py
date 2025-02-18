@@ -93,7 +93,6 @@ def plot_map(merged_data):
     # Exibir o mapa no Streamlit
     st_folium(m, width=725)
 
-# Algoritmo de previsão
 def run_prediction(merged_data):
     target_column = "IPQV"  # Alvo a ser previsto
     
@@ -133,9 +132,28 @@ def run_prediction(merged_data):
         st.write(f"Erro Médio Quadrático (MSE): {mse:.4f}")
         st.write(f"Raiz do Erro Médio Quadrático (RMSE): {rmse:.4f}")
         
-        # Exibir a comparação entre o valor real e a previsão
-        prediction_df = pd.DataFrame({'Real': y_test, 'Previsto': y_pred})
+        # Adicionar os nomes dos estados aos dados de previsão
+        prediction_df = pd.DataFrame({
+            'Unidades da Federação': merged_data.loc[y_test.index, 'Unidades da Federação'],
+            'Real': y_test,
+            'Previsto': y_pred
+        })
+        
+        # Definir o nome dos estados como índice
+        prediction_df.set_index('Unidades da Federação', inplace=True)
+        
+        # Exibir a comparação
         st.write(prediction_df)
+        
+        # Plotando a comparação
+        plt.figure(figsize=(12, 6))
+        sns.barplot(x=prediction_df.index, y='Real', data=prediction_df, color='blue', alpha=0.6, label='Real')
+        sns.barplot(x=prediction_df.index, y='Previsto', data=prediction_df, color='red', alpha=0.6, label='Previsto')
+        plt.xticks(rotation=90)
+        plt.title(f"Comparação entre valores reais e previstos - {model_name}")
+        plt.legend()
+        st.pyplot(plt)
+
 
 
 # Exibir o aplicativo
