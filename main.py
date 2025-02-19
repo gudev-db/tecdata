@@ -153,22 +153,19 @@ def plot_correlation_matrix(merged_data):
 
 
 def run_prediction(merged_data):
-    target_column = "IPQV"  # Alvo a ser previsto
-    
+    target_column = "IPQV"
     if target_column not in merged_data.columns:
         st.error(f"A coluna {target_column} não foi encontrada no DataFrame.")
         return
 
-    # Selecionar as variáveis independentes (removendo o alvo)
     features = merged_data.drop(columns=[target_column, 'Unidades da Federação'])
-
-    # Separar os dados em treino e teste
+    if 'Acesso aos serviços de utilidade pública' in features.columns:
+        features = features.drop(columns=['Acesso aos serviços de utilidade pública'])
+    
     X = features
     y = merged_data[target_column]
-    
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
     
-    # Modelos para comparação
     models = {
         "Regressão Linear": LinearRegression(),
         "Árvore de Decisão": DecisionTreeRegressor(),
@@ -177,34 +174,20 @@ def run_prediction(merged_data):
 
     for model_name, model in models.items():
         st.write(f"Modelo: {model_name}")
-        
-        # Treinar o modelo
         model.fit(X_train, y_train)
-        
-        # Fazer previsões
         y_pred = model.predict(X_test)
-        
-        # Avaliar o modelo
         mse = mean_squared_error(y_test, y_pred)
         rmse = np.sqrt(mse)
-        
         st.write(f"Erro Médio Quadrático (MSE): {mse:.4f}")
         st.write(f"Raiz do Erro Médio Quadrático (RMSE): {rmse:.4f}")
         
-        # Adicionar os nomes dos estados aos dados de previsão
         prediction_df = pd.DataFrame({
             'Unidades da Federação': merged_data.loc[y_test.index, 'Unidades da Federação'],
             'Real': y_test,
             'Previsto': y_pred
-        })
+        }).set_index('Unidades da Federação')
         
-        # Definir o nome dos estados como índice
-        prediction_df.set_index('Unidades da Federação', inplace=True)
-        
-        # Exibir a comparação
         st.write(prediction_df)
-        
-        # Plotando a comparação
         plt.figure(figsize=(12, 6))
         sns.barplot(x=prediction_df.index, y='Real', data=prediction_df, color='blue', alpha=0.6, label='Real')
         sns.barplot(x=prediction_df.index, y='Previsto', data=prediction_df, color='red', alpha=0.6, label='Previsto')
