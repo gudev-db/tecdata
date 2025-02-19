@@ -181,20 +181,13 @@ def run_prediction(merged_data):
         st.write(f"Erro Médio Quadrático (MSE): {mse:.4f}")
         st.write(f"Raiz do Erro Médio Quadrático (RMSE): {rmse:.4f}")
         
-        prediction_df = pd.DataFrame({
-            'Unidades da Federação': merged_data.loc[y_test.index, 'Unidades da Federação'],
-            'Real': y_test,
-            'Previsto': y_pred
-        }).set_index('Unidades da Federação')
-        
-        st.write(prediction_df)
-        plt.figure(figsize=(12, 6))
-        sns.barplot(x=prediction_df.index, y='Real', data=prediction_df, color='blue', alpha=0.6, label='Real')
-        sns.barplot(x=prediction_df.index, y='Previsto', data=prediction_df, color='red', alpha=0.6, label='Previsto')
-        plt.xticks(rotation=90)
-        plt.title(f"Comparação entre valores reais e previstos - {model_name}")
-        plt.legend()
+        plt.figure(figsize=(8, 6))
+        sns.scatterplot(x=y_test, y=y_pred)
+        plt.xlabel("Valores Reais")
+        plt.ylabel("Valores Previstos")
+        plt.title(f"Scatter Plot: Real vs Previsto - {model_name}")
         st.pyplot(plt)
+
 
 
 
