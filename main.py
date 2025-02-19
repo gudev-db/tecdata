@@ -181,12 +181,7 @@ def run_prediction(merged_data):
         st.write(f"Erro Médio Quadrático (MSE): {mse:.4f}")
         st.write(f"Raiz do Erro Médio Quadrático (RMSE): {rmse:.4f}")
         
-        plt.figure(figsize=(8, 6))
-        sns.scatterplot(x=y_test, y=y_pred)
-        plt.xlabel("Valores Reais")
-        plt.ylabel("Valores Previstos")
-        plt.title(f"Scatter Plot: Real vs Previsto - {model_name}")
-        st.pyplot(plt)
+        st.scatter_chart(pd.DataFrame({"Valores Reais": y_test, "Valores Previstos": y_pred}))
 
 
 
