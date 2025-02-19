@@ -132,7 +132,23 @@ def plot_map(merged_data):
         st.write(f"IPQV no estado {selected_state}: {st.session_state.real_ipqv:.3f}" if st.session_state.real_ipqv else "Dados não encontrados para o estado.")
 
 
+def plot_correlation_matrix(merged_data):
+    st.write("Matriz de Correlação entre as Variáveis Numéricas")
 
+    # Selecionar apenas colunas numéricas
+    numeric_cols = merged_data.select_dtypes(include=['float64', 'int64'])
+
+    # Calcular a matriz de correlação
+    correlation_matrix = numeric_cols.corr()
+
+    # Exibir a matriz de correlação como uma tabela
+    st.write(correlation_matrix)
+
+    # Plotar a matriz de correlação com Seaborn
+    plt.figure(figsize=(10, 6))
+    sns.heatmap(correlation_matrix, annot=True, cmap="coolwarm", fmt=".2f", linewidths=0.5)
+    plt.title("Matriz de Correlação")
+    st.pyplot(plt)
 
 
 
@@ -211,6 +227,9 @@ def main():
     
     # Mapa
     plot_map(merged_data)
+
+    # Matriz de Correlação
+    plot_correlation_matrix(merged_data)
     
     # Previsão
     run_prediction(merged_data)
